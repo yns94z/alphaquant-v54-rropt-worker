@@ -387,6 +387,18 @@ class Engine:
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--out",required=True);a=ap.parse_args()
     out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
-    if (out/"V54_PRECOMMIT.json").exists():raise SystemExit("LOCK: V54.3 already initialized in this output folder. Use the same running process; do not start a duplicate.")
-    asyncio.run(Engine(out).run())
+    lock_path=out/"V54_PROCESS.lock"
+    import fcntl
+    lock_file=lock_path.open("a+")
+    try:
+        fcntl.flock(lock_file.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock_file.close()
+        raise SystemExit("LOCK: V54.3 worker already running in this output folder.")
+
+    try:
+        asyncio.run(Engine(out).run())
+    finally:
+        fcntl.flock(lock_file.fileno(),fcntl.LOCK_UN)
+        lock_file.close()
 if __name__=="__main__":main()

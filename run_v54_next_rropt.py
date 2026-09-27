@@ -237,7 +237,18 @@ class Engine:
         ready_stop=ready_start+timedelta(days=RUN_DAYS)
         ready_path=self.out/"V54_FEED_READY.json"
         if ready_path.exists():
-            raise RuntimeError("LOCK: V54_FEED_READY.json already exists; refusing to overwrite scientific T0 evidence.")
+            try:
+                saved=json.loads(ready_path.read_text(encoding="utf-8"))
+                if saved.get("version") != VERSION or saved.get("candidate") != C["id"]:
+                    raise RuntimeError("LOCK: incompatible V54_FEED_READY.json evidence.")
+                if saved.get("provider") != "OKX EEA" or saved.get("paper_only") is not True or saved.get("trading_access") is not False or saved.get("live") != "LOCKED":
+                    raise RuntimeError("LOCK: invalid V54_FEED_READY.json execution state.")
+                self.start=datetime.fromisoformat(saved["feed_ready_utc"])
+                self.stop_at=datetime.fromisoformat(saved["planned_stop_utc"])
+                print(f"REUSING V54_FEED_READY T0 {iso(self.start)} | planned_stop={iso(self.stop_at)}",flush=True)
+                return True
+            except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as e:
+                raise RuntimeError(f"LOCK: invalid V54_FEED_READY.json evidence: {type(e).__name__}: {e}")
         atomic_json(ready_path,{"version":VERSION,"candidate":C["id"],"process_started_utc":iso(self.process_start),"feed_ready_utc":iso(ready_start),"planned_stop_utc":iso(ready_stop),"duration_days":RUN_DAYS,"warmup_hours":WARMUP_HOURS,"feed_health_max_age_sec":120,"transports":{"trades":WS_PUBLIC,"bbo-tbt":WS_PUBLIC},"provider":"OKX EEA","instruments":SYMBOL,"contracts":self.contracts,"event_counts":self.event_counts,"last_event_utc":self.last_event_utc,"paper_only":True,"trading_access":False,"live":"LOCKED"})
         self.start=ready_start
         self.stop_at=ready_stop

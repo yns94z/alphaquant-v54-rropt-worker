@@ -29,6 +29,7 @@ STOP_BPS=15.; TARGET_R=6.; HORIZON_SEC=1200; TRIG=.60; GAP=.35; HIST_COST_R=.083
 RUN_DAYS=7
 # Public market-data only. There is deliberately no REST trading endpoint, API key, secret, or order method.
 WS_PUBLIC="wss://wseea.okx.com:8443/ws/v5/public"
+WS_BUSINESS="wss://wseea.okx.com:8443/ws/v5/business"
 REST_INSTRUMENTS="https://eea.okx.com/api/v5/public/instruments?instType=SWAP"
 EXPECTED_CTVAL={"AVAX":1.0,"BNB":0.01,"BTC":0.01,"DOGE":1000.0,"ETH":0.1,"SOL":1.0,"XRP":100.0}
 WARMUP_HOURS=6
@@ -61,8 +62,8 @@ class Engine:
         self.bars={a:deque(maxlen=9000) for a in ASSETS}; self.bucket={}; self.book={}
         self.positions=[]; self.pending_entries={}; self.last_entry={}; self.day=None; self.day_trades=0; self.day_net=0.; self.per_asset=defaultdict(int)
         self.total_closed=0; self.total_net=0.; self.closed_wins=0; self.ws_reconnects=0; self.messages=0
-        self.event_counts={a:{"trades":0,"bbo-tbt":0} for a in ASSETS}
-        self.last_event_utc={a:{"trades":None,"bbo-tbt":None} for a in ASSETS}
+        self.event_counts={a:{"trades":0,"bbo-tbt":0,"candle5m":0} for a in ASSETS}
+        self.last_event_utc={a:{"trades":None,"bbo-tbt":None,"candle5m":None} for a in ASSETS}
         self.ready=False; self.last_bar_eval=None; self.window_closed=False; self.contracts={}
         self.run_id=os.environ.get("RUN_ID","").strip()
         self.worker_id=os.environ.get("WORKER_ID","").strip()
@@ -334,7 +335,8 @@ class Engine:
         backoff=1
         while self.stop_at is None or utcnow()<self.stop_at or (channel in ("bbo-tbt","candle5m") and any(p["asset"]==a for p in self.positions)):
             try:
-                async with websockets.connect(WS_PUBLIC,ping_interval=20,ping_timeout=20,close_timeout=10,open_timeout=20,max_queue=5000) as ws:
+                ws_url = WS_BUSINESS if channel == "candle5m" else WS_PUBLIC
+                async with websockets.connect(ws_url,ping_interval=20,ping_timeout=20,close_timeout=10,open_timeout=20,max_queue=5000) as ws:
                     await ws.send(json.dumps({"op":"subscribe","args":[{"channel":channel,"instId":SYMBOL[a]}]}))
                     print(f"WS {a} {channel} CONNECTED {iso()}",flush=True)
                     backoff=1

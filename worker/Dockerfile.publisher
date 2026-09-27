@@ -1,0 +1,6 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY publisher_rropt /app/publisher_rropt
+
+CMD ["python", "-u", "/app/publisher_rropt/publisher_rropt.py"]

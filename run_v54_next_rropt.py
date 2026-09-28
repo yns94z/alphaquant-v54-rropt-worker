@@ -19,14 +19,14 @@ except ImportError as exc:
     TelemetryWriter = None
     _TELEMETRY_IMPORT_ERROR = exc
 
-VERSION="V54.3_OKX_EEA_PAPER_7D_RROPT_NEXT_WORKER"
+VERSION="V54.3_OKX_EEA_PAPER_2D_HIGHR_RROPT_TEST"
 ASSETS=["AVAX","BNB","BTC","DOGE","ETH","SOL","XRP"]
 SYMBOL={a:f"{a}-USDT-SWAP" for a in ASSETS}
 C={"id":"V514_C12_Q2.4_M+","signal_floor":1.25,"w_signal":.70,"w_mom":.75,"w_flow":.30,
    "w_range_penalty":.25,"quality_min":2.4,"pool":6,"cap":12,"cool":24,"max_asset":6,
    "soft":-2.0,"hard":-4.0,"keep":.25}
-STOP_BPS=15.; TARGET_R=6.; HORIZON_SEC=1200; TRIG=.60; GAP=.35; HIST_COST_R=.0833333333333333
-RUN_DAYS=7
+STOP_BPS=15.; TARGET_R=10.; HORIZON_SEC=1200; TRIG=1.50; GAP=.75; HIST_COST_R=.0833333333333333
+RUN_DAYS=2
 # Public market-data only. There is deliberately no REST trading endpoint, API key, secret, or order method.
 WS_PUBLIC="wss://wseea.okx.com:8443/ws/v5/public"
 WS_BUSINESS="wss://wseea.okx.com:8443/ws/v5/business"

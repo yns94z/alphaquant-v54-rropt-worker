@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import asyncio, argparse, csv, json, math, os, signal, time, urllib.request
 from collections import defaultdict, deque
 from datetime import datetime, timezone, timedelta
@@ -23,6 +23,7 @@ STOP_BPS=15.; TARGET_R=8.; HORIZON_SEC=1800; TRIG=1.00; GAP=.50; HIST_COST_R=.08
 RUN_DAYS=1
 # Public market-data only. There is deliberately no REST trading endpoint, API key, secret, or order method.
 WS_PUBLIC="wss://wseea.okx.com:8443/ws/v5/public"
+WS_BUSINESS="wss://wseea.okx.com:8443/ws/v5/business"
 REST_INSTRUMENTS="https://eea.okx.com/api/v5/public/instruments?instType=SWAP"
 EXPECTED_CTVAL={"AVAX":1.0,"BNB":0.01,"BTC":0.01,"DOGE":1000.0,"ETH":0.1,"SOL":1.0,"XRP":100.0}
 WARMUP_HOURS=6
@@ -329,7 +330,8 @@ class Engine:
         backoff=1
         while self.stop_at is None or utcnow()<self.stop_at or (channel=="bbo-tbt" and any(p["asset"]==a for p in self.positions)):
             try:
-                async with websockets.connect(WS_PUBLIC,ping_interval=20,ping_timeout=20,close_timeout=10,open_timeout=20,max_queue=5000) as ws:
+                ws_url = WS_BUSINESS if channel == "candle5m" else WS_PUBLIC
+                async with websockets.connect(ws_url,ping_interval=20,ping_timeout=20,close_timeout=10,open_timeout=20,max_queue=5000) as ws:
                     await ws.send(json.dumps({"op":"subscribe","args":[{"channel":channel,"instId":SYMBOL[a]}]}))
                     print(f"WS {a} {channel} CONNECTED {iso()}",flush=True)
                     backoff=1
@@ -384,3 +386,4 @@ def main():
     if (out/"V54_PRECOMMIT.json").exists():raise SystemExit("LOCK: output folder already initialized; use a new run directory.")
     asyncio.run(Engine(out,a.run_id,a.worker_id,a.source).run())
 if __name__=="__main__":main()
+

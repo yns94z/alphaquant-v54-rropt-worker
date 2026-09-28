@@ -369,7 +369,7 @@ class Engine:
         for a in ASSETS:
             tasks.append(asyncio.create_task(self.stream_asset_event(a,"trades"),name=f"ws-{a}-trades"))
             tasks.append(asyncio.create_task(self.stream_asset_event(a,"bbo-tbt"),name=f"ws-{a}-bbo-tbt"))
-            tasks.append(asyncio.create_task(self.stream_asset_event(a,"candle5m"),name=f"ws-{a}-candle5m"))
+            # candle5m disabled: OKX rejects this subscription; telemetry only
         try:
             await asyncio.gather(*tasks)
         finally:
@@ -386,4 +386,6 @@ def main():
     if (out/"V54_PRECOMMIT.json").exists():raise SystemExit("LOCK: output folder already initialized; use a new run directory.")
     asyncio.run(Engine(out,a.run_id,a.worker_id,a.source).run())
 if __name__=="__main__":main()
+
+
 

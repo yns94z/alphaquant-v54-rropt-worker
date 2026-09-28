@@ -11,4 +11,4 @@ COPY publisher_rropt /app/publisher_rropt
 
 ENV RROPT_TELEMETRY_DIR=/app/telemetry_rropt
 
-CMD ["sh", "-c", "exec python -u /app/run_v54_highr_v1.py --out /data/${RUN_ID}"]
+CMD ["sh", "-c", "exec python -u /app/run_v54_highr_v1.py --out /data/${RUN_ID} --run-id ${RUN_ID} --worker-id ${WORKER_ID}"]

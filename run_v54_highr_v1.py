@@ -58,6 +58,20 @@ class Engine:
         self.bars={a:deque(maxlen=9000) for a in ASSETS}; self.bucket={}; self.book={}
         self.positions=[]; self.pending_entries={}; self.last_entry={}; self.last_global_entry=None; self.day=None; self.day_trades=0; self.day_net=0.; self.per_asset=defaultdict(int)
         self.total_closed=0; self.total_net=0.; self.closed_wins=0; self.ws_reconnects=0; self.messages=0
+        self.filter_counts={
+            "no_feature":0,
+            "signal":0,
+            "mtf":0,
+            "flow":0,
+            "breakout":0,
+            "range_expand":0,
+            "quality":0,
+            "accepted":0,
+            "cooldown_global":0,
+            "cooldown_asset":0,
+            "asset_reject":0,
+            "position_or_pending":0,
+        }
         self.event_counts={a:{"trades":0,"bbo-tbt":0,"candle5m":0} for a in ASSETS}
         self.last_event_utc={a:{"trades":None,"bbo-tbt":None} for a in ASSETS}
         self.ready=False; self.last_bar_eval=None; self.window_closed=False; self.contracts={}
@@ -253,23 +267,68 @@ class Engine:
         cand=[]
         for a in ASSETS:
             f=self.feature(a,t)
-            if not f or abs(f["signal"])<C["signal_floor"]: continue
-            if f["mtf"]<C["mtf_min"] or f["flow_dir"]<C["flow_min"]: continue
-            if f["breakout"]<C["breakout_z"] or f["range_expand"]<1.0375: continue
-            if f["quality"]<C["quality_min"]+.35: continue
+
+            if not f:
+                self.filter_counts["no_feature"]+=1
+                continue
+
+            if abs(f["signal"])<C["signal_floor"]:
+                self.filter_counts["signal"]+=1
+                continue
+
+            if f["mtf"]<C["mtf_min"]:
+                self.filter_counts["mtf"]+=1
+                continue
+
+            if f["flow_dir"]<C["flow_min"]:
+                self.filter_counts["flow"]+=1
+                continue
+
+            if f["breakout"]<C["breakout_z"]:
+                self.filter_counts["breakout"]+=1
+                continue
+
+            if f["range_expand"]<1.0375:
+                self.filter_counts["range_expand"]+=1
+                continue
+
+            if f["quality"]<C["quality_min"]+.35:
+                self.filter_counts["quality"]+=1
+                continue
+
+            self.filter_counts["accepted"]+=1
             cand.append(f)
+
         cand=sorted(cand,key=lambda x:x["quality"],reverse=True)
         if self.day_net<=C["hard"] or self.day_trades>=C["cap"]:return
+
         for f in cand[:1]:
             a=f["asset"]
-            if self.per_asset[a]>=C["max_asset"]:continue
-            if self.last_global_entry is not None and (now-self.last_global_entry).total_seconds()<C["entry_gap_sec"]: continue
-            if a in self.last_entry and (now-self.last_entry[a]).total_seconds()<5*C["cool"]:continue
-            if any(p["asset"]==a for p in self.positions) or a in self.pending_entries:continue
+
+            if self.per_asset[a]>=C["max_asset"]:
+                self.filter_counts["asset_reject"]+=1
+                continue
+
+            if self.last_global_entry is not None and (now-self.last_global_entry).total_seconds()<C["entry_gap_sec"]:
+                self.filter_counts["cooldown_global"]+=1
+                continue
+
+            if a in self.last_entry and (now-self.last_entry[a]).total_seconds()<5*C["cool"]:
+                self.filter_counts["cooldown_asset"]+=1
+                continue
+
+            if any(p["asset"]==a for p in self.positions) or a in self.pending_entries:
+                self.filter_counts["position_or_pending"]+=1
+                continue
+
             direction=f["direction"]; signal_received=utcnow()
             self.pending_entries[a]={"asset":a,"direction":direction,"side":"LONG" if direction==1 else "SHORT",
                 "signal_time":iso(pd.Timestamp(t).to_pydatetime()),"signal_received_utc":signal_received,
                 "entry_ref_price":f["price"],"quality":f["quality"],"signal":f["signal"]}
+
+        if self.messages % 500 == 0:
+            print(f"FILTERS {self.filter_counts}",flush=True)
+
         self.status(self.current_state())
     def update_positions(self,a,received,bid,ask):
         if not self.positions:return

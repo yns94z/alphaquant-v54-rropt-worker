@@ -57,7 +57,7 @@ class Engine:
         self.telemetry=TelemetryWriter(str(out), run_id, worker_id, source); self.process_start=utcnow(); self.start=None; self.stop_at=None
         self.bars={a:deque(maxlen=9000) for a in ASSETS}; self.bucket={}; self.book={}
         self.positions=[]; self.pending_entries={}; self.last_entry={}; self.last_global_entry=None; self.day=None; self.day_trades=0; self.day_net=0.; self.per_asset=defaultdict(int)
-        self.total_closed=0; self.total_net=0.; self.closed_wins=0; self.ws_reconnects=0; self.messages=0
+        self.total_closed=0; self.total_net=0.; self.closed_wins=0; self.ws_reconnects=0; self.messages=0; self.last_filter_log=None
         self.filter_counts={
             "no_feature":0,
             "signal":0,
@@ -326,8 +326,9 @@ class Engine:
                 "signal_time":iso(pd.Timestamp(t).to_pydatetime()),"signal_received_utc":signal_received,
                 "entry_ref_price":f["price"],"quality":f["quality"],"signal":f["signal"]}
 
-        if self.messages % 500 == 0:
+        if self.last_filter_log is None or (now - self.last_filter_log).total_seconds() >= 300:
             print(f"FILTERS {self.filter_counts}",flush=True)
+            self.last_filter_log=now
 
         self.status(self.current_state())
     def update_positions(self,a,received,bid,ask):
@@ -445,6 +446,7 @@ def main():
     if (out/"V54_PRECOMMIT.json").exists():raise SystemExit("LOCK: output folder already initialized; use a new run directory.")
     asyncio.run(Engine(out,a.run_id,a.worker_id,a.source).run())
 if __name__=="__main__":main()
+
 
 
 

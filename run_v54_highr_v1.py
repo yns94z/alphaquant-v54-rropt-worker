@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 import asyncio, argparse, csv, json, math, os, signal, time, urllib.request
 from collections import defaultdict, deque
 from datetime import datetime, timezone, timedelta
@@ -285,6 +285,11 @@ class Engine:
                 continue
 
             if f["breakout"]<C["breakout_z"]:
+                if not hasattr(self,"breakout_candidate_log"):
+                    self.breakout_candidate_log=0
+                self.breakout_candidate_log+=1
+                if self.breakout_candidate_log<=50:
+                    print(f"BREAKOUT_CANDIDATE {a} breakout={f['breakout']:.4f} threshold={C['breakout_z']:.4f} signal={f['signal']:.4f} mtf={f['mtf']:.4f} flow={f['flow_dir']:.4f} range_expand={f['range_expand']:.4f}",flush=True)
                 self.filter_counts["breakout"]+=1
                 continue
 

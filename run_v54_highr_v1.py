@@ -18,7 +18,7 @@ ASSETS=["AVAX","BNB","BTC","DOGE","ETH","SOL","XRP"]
 SYMBOL={a:f"{a}-USDT-SWAP" for a in ASSETS}
 C={"id":"V514_C12_Q2.4_M+","signal_floor":1.25,"w_signal":.70,"w_mom":.75,"w_flow":.30,
    "w_range_penalty":.25,"quality_min":2.4,"pool":6,"cap":12,"cool":24,"max_asset":6,
-   "soft":-2.0,"hard":-4.0,"keep":.25,"breakout_z":0.50,"mtf_min":.55,"flow_min":.18,"range_expand_z":.75,"entry_gap_sec":5400}
+   "soft":-2.0,"hard":-4.0,"keep":.25,"breakout_z":0.00,"mtf_min":.55,"flow_min":.18,"range_expand_z":.75,"entry_gap_sec":5400}
 STOP_BPS=15.; TARGET_R=8.; HORIZON_SEC=1800; TRIG=1.00; GAP=.50; HIST_COST_R=.0833333333333333
 RUN_DAYS=1
 # Public market-data only. There is deliberately no REST trading endpoint, API key, secret, or order method.
@@ -451,6 +451,7 @@ def main():
     if (out/"V54_PRECOMMIT.json").exists():raise SystemExit("LOCK: output folder already initialized; use a new run directory.")
     asyncio.run(Engine(out,a.run_id,a.worker_id,a.source).run())
 if __name__=="__main__":main()
+
 
 
 

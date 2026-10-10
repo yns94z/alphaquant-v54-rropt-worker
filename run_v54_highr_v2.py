@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 import asyncio, argparse, csv, json, math, os, signal, time, urllib.request
 from collections import defaultdict, deque
 from datetime import datetime, timezone, timedelta
@@ -315,6 +315,27 @@ class Engine:
                 continue
 
             self.diag_counts["signal_pass"]+=1
+            if not hasattr(self, "diag_values_printed"):
+                self.diag_values_printed=0
+
+            if self.diag_values_printed<50:
+                print(
+                    f"DIAG_VALUES {a} "
+                    f"signal={f['signal']:.4f} "
+                    f"mtf={f['mtf']:.4f} "
+                    f"flow={f['flow_dir']:.4f} "
+                    f"breakout={f['breakout']:.4f} "
+                    f"range={f['range_expand']:.4f} "
+                    f"quality={f['quality']:.4f} "
+                    f"min_signal={C['signal_floor']:.4f} "
+                    f"min_mtf={C['mtf_min']:.4f} "
+                    f"min_flow={C['flow_min']:.4f} "
+                    f"min_breakout={C['breakout_z']:.4f} "
+                    f"min_range={C['range_expand_min']:.4f} "
+                    f"min_quality={C['quality_min']+.35:.4f}",
+                    flush=True
+                )
+                self.diag_values_printed+=1
 
             if self.diag_samples["signal_pass"]<20:
                 print(

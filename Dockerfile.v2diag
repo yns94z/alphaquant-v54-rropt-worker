@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY run_v54_highr_v2.py /app/run_v54_highr_v2.py
+COPY telemetry_rropt /app/telemetry_rropt
+COPY publisher_rropt /app/publisher_rropt
+
+ENV RROPT_TELEMETRY_DIR=/tmp/alphaquant_v2_diag
+
+CMD ["python", "-u", "/app/run_v54_highr_v2.py", "--out", "/tmp/alphaquant_v2_diag", "--run-id", "AQ-V54-DIAG-V2", "--worker-id", "AQ-V54-DIAG-V2-WORKER"]
